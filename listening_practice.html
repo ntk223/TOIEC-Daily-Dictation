@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOEIC Listening Practice</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; color: #333; }
+
+        header {
+            background: linear-gradient(135deg, #1a237e, #283593);
+            color: white; padding: 24px 32px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            position: sticky; top: 0; z-index: 100;
+        }
+        header h1 { font-size: 1.8rem; font-weight: 700; }
+        header p  { font-size: 0.95rem; opacity: 0.85; margin-top: 4px; }
+
+        .stats-bar {
+            background: white; display: flex; gap: 24px; flex-wrap: wrap;
+            padding: 14px 32px; border-bottom: 1px solid #e0e0e0;
+            align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .stat-item  { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+        .stat-number { font-weight: 700; font-size: 1.1rem; color: #1a237e; }
+
+        .controls {
+            background: white; padding: 16px 32px;
+            display: flex; flex-wrap: wrap; gap: 12px;
+            align-items: center; border-bottom: 1px solid #e0e0e0;
+        }
+        .controls input[type="text"] {
+            padding: 9px 16px; border: 1.5px solid #ddd; border-radius: 8px;
+            font-size: 0.9rem; min-width: 260px; outline: none; transition: border-color 0.2s;
+        }
+        .controls input[type="text"]:focus { border-color: #3f51b5; }
+
+        .filter-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .filter-label { font-size: 0.85rem; color: #666; font-weight: 600; }
+
+        .filter-btn {
+            padding: 6px 14px; border: 1.5px solid #ddd; border-radius: 20px;
+            background: white; cursor: pointer; font-size: 0.82rem;
+            transition: all 0.2s; font-weight: 500;
+        }
+        .filter-btn:hover  { background: #e8eaf6; border-color: #3f51b5; }
+        .filter-btn.active { background: #3f51b5; color: white; border-color: #3f51b5; }
+
+        .vocab-A2 { border-color: #66bb6a; color: #388e3c; }
+        .vocab-A2.active { background: #66bb6a; color: white; border-color: #66bb6a; }
+        .vocab-B1 { border-color: #42a5f5; color: #1565c0; }
+        .vocab-B1.active { background: #42a5f5; color: white; border-color: #42a5f5; }
+        .vocab-B2 { border-color: #ffa726; color: #e65100; }
+        .vocab-B2.active { background: #ffa726; color: white; border-color: #ffa726; }
+        .vocab-C1 { border-color: #ef5350; color: #b71c1c; }
+        .vocab-C1.active { background: #ef5350; color: white; border-color: #ef5350; }
+
+        .sort-select {
+            padding: 8px 14px; border: 1.5px solid #ddd; border-radius: 8px;
+            font-size: 0.85rem; outline: none; cursor: pointer;
+        }
+
+        .progress-summary {
+            background: white; padding: 12px 32px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex; align-items: center; gap: 16px;
+        }
+        .progress-bar-wrapper {
+            flex: 1; max-width: 400px; background: #e0e0e0;
+            border-radius: 10px; height: 10px; overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; background: linear-gradient(90deg, #43a047, #66bb6a);
+            border-radius: 10px; transition: width 0.5s;
+        }
+        .progress-text { font-size: 0.88rem; color: #555; }
+
+        .main-content { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+
+        .loading { text-align: center; padding: 60px; color: #888; font-size: 1.1rem; }
+        .loading .spinner {
+            width: 40px; height: 40px; border: 4px solid #e0e0e0;
+            border-top-color: #3f51b5; border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .category-section { margin-bottom: 40px; }
+        .category-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 16px; cursor: pointer; user-select: none;
+        }
+        .category-title { display: flex; align-items: center; gap: 12px; }
+        .category-icon  { font-size: 1.5rem; }
+        .category-name  { font-size: 1.2rem; font-weight: 700; color: #1a237e; }
+        .category-count {
+            background: #e8eaf6; color: #3f51b5; border-radius: 12px;
+            padding: 2px 10px; font-size: 0.8rem; font-weight: 600;
+        }
+        .category-progress { display: flex; align-items: center; gap: 10px; }
+        .cat-progress-bar {
+            width: 120px; background: #e0e0e0; border-radius: 10px; height: 8px; overflow: hidden;
+        }
+        .cat-progress-fill { height: 100%; background: #43a047; border-radius: 10px; transition: width 0.4s; }
+        .cat-progress-text { font-size: 0.8rem; color: #777; }
+        .collapse-icon { font-size: 1.1rem; color: #888; transition: transform 0.3s; }
+        .collapse-icon.collapsed { transform: rotate(-90deg); }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 14px;
+        }
+        .card {
+            background: white; border-radius: 12px; padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #3f51b5;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .card:hover    { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+        .card.completed { border-left-color: #43a047; background: #f9fff9; }
+        .card.hidden    { display: none; }
+
+        .card-top   { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+        .card-title { font-size: 0.95rem; font-weight: 600; color: #1a237e; line-height: 1.4; flex: 1; }
+        .card.completed .card-title { color: #2e7d32; }
+
+        .vocab-badge  {
+            font-size: 0.72rem; font-weight: 700; padding: 2px 8px;
+            border-radius: 10px; white-space: nowrap; flex-shrink: 0;
+        }
+        .badge-A2      { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .badge-B1      { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+        .badge-B2      { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+        .badge-C1      { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
+        .badge-unknown { background: #f5f5f5; color: #888;    border: 1px solid #ddd; }
+
+        .card-meta { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: #888; }
+        .card-type-badge { padding: 2px 8px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
+        .type-conversation { background: #ede7f6; color: #4527a0; }
+        .type-short-talk   { background: #fce4ec; color: #880e4f; }
+
+        .card-actions { display: flex; gap: 8px; margin-top: 4px; }
+        .btn-practice {
+            flex: 1; padding: 8px 12px;
+            background: linear-gradient(135deg, #3f51b5, #5c6bc0);
+            color: white; border: none; border-radius: 8px;
+            font-size: 0.83rem; font-weight: 600; cursor: pointer;
+            text-decoration: none; text-align: center; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-practice:hover { background: linear-gradient(135deg, #283593, #3f51b5); }
+        .card.completed .btn-practice { background: linear-gradient(135deg, #388e3c, #43a047); }
+
+        .btn-check {
+            padding: 8px 12px; background: white; border: 1.5px solid #ddd;
+            border-radius: 8px; cursor: pointer; font-size: 1rem;
+            transition: all 0.2s; color: #aaa;
+        }
+        .btn-check:hover  { border-color: #43a047; color: #43a047; }
+        .btn-check.checked { border-color: #43a047; color: #43a047; background: #e8f5e9; }
+
+        .no-results      { text-align: center; padding: 60px; color: #aaa; font-size: 1rem; }
+        .no-results .icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+
+        .reset-btn {
+            padding: 7px 14px; background: #ffebee; color: #c62828;
+            border: 1.5px solid #ef9a9a; border-radius: 8px; font-size: 0.83rem;
+            cursor: pointer; font-weight: 600; transition: all 0.2s; margin-left: auto;
+        }
+        .reset-btn:hover { background: #ffcdd2; }
+
+        .topic-filter {
+            background: #f8f9ff;
+            padding: 12px 32px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .topic-filter-label {
+            font-size: 0.85rem; color: #666; font-weight: 600;
+            white-space: nowrap; margin-right: 4px;
+        }
+
+        .topic-btn {
+            padding: 5px 12px;
+            border: 1.5px solid #c5cae9;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #3f51b5;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .topic-btn:hover  { background: #e8eaf6; border-color: #3f51b5; }
+        .topic-btn.active { background: #3f51b5; color: white; border-color: #3f51b5; }
+        .topic-btn-all.active { background: #1a237e; border-color: #1a237e; }
+
+        .divider { border: none; border-bottom: 2px solid #e8eaf6; margin-bottom: 0; }
+
+        @media (max-width: 768px) {
+            header { padding: 16px; }
+            .controls, .stats-bar, .progress-summary, .topic-filter { padding: 12px 16px; }
+            .main-content { padding: 16px; }
+            .controls input[type="text"] { min-width: 100%; }
+            .cards-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>📚 TOEIC Listening Practice</h1>
+    <p>Luyện nghe TOEIC theo chủ đề — Daily Dictation</p>
+</header>
+
+<div class="stats-bar">
+    <div class="stat-item">🗂️ Chủ đề: <span class="stat-number" id="totalCategories">0</span></div>
+    <div class="stat-item">🎧 Tổng bài: <span class="stat-number" id="totalItems">0</span></div>
+    <div class="stat-item">✅ Đã hoàn thành: <span class="stat-number" id="completedItems">0</span></div>
+    <div class="stat-item">📊 Kết quả tìm kiếm: <span class="stat-number" id="visibleItems">0</span></div>
+</div>
+
+<div class="controls">
+    <input type="text" id="searchInput" placeholder="🔍 Tìm kiếm theo tiêu đề bài học..." oninput="applyFilters()" />
+
+    <div class="filter-group">
+        <span class="filter-label">Loại:</span>
+        <button class="filter-btn active" onclick="toggleTypeFilter(this,'all')" data-type="all">Tất cả</button>
+        <button class="filter-btn" onclick="toggleTypeFilter(this,'conversation')" data-type="conversation">💬 Conversation</button>
+        <button class="filter-btn" onclick="toggleTypeFilter(this,'short-talk')" data-type="short-talk">🎙️ Short Talk</button>
+    </div>
+
+    <div class="filter-group">
+        <span class="filter-label">Cấp độ:</span>
+        <button class="filter-btn active" onclick="toggleVocabFilter(this,'all')" data-vocab="all">Tất cả</button>
+        <button class="filter-btn vocab-A2" onclick="toggleVocabFilter(this,'A2')" data-vocab="A2">A2</button>
+        <button class="filter-btn vocab-B1" onclick="toggleVocabFilter(this,'B1')" data-vocab="B1">B1</button>
+        <button class="filter-btn vocab-B2" onclick="toggleVocabFilter(this,'B2')" data-vocab="B2">B2</button>
+        <button class="filter-btn vocab-C1" onclick="toggleVocabFilter(this,'C1')" data-vocab="C1">C1</button>
+    </div>
+
+    <div class="filter-group">
+        <span class="filter-label">Sắp xếp:</span>
+        <select class="sort-select" id="sortSelect" onchange="applyFilters()">
+            <option value="default">Mặc định</option>
+            <option value="title-asc">Tiêu đề A→Z</option>
+            <option value="title-desc">Tiêu đề Z→A</option>
+            <option value="vocab-asc">Cấp độ thấp→cao</option>
+            <option value="vocab-desc">Cấp độ cao→thấp</option>
+            <option value="completed">Chưa làm trước</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <span class="filter-label">Trạng thái:</span>
+        <button class="filter-btn active" onclick="toggleDoneFilter(this,'all')" data-done="all">Tất cả</button>
+        <button class="filter-btn" onclick="toggleDoneFilter(this,'done')" data-done="done">✅ Đã làm</button>
+        <button class="filter-btn" onclick="toggleDoneFilter(this,'undone')" data-done="undone">⭕ Chưa làm</button>
+    </div>
+
+    <button class="reset-btn" onclick="resetAll()">🔄 Reset bộ lọc</button>
+</div>
+
+<div class="topic-filter" id="topicFilter">
+    <span class="topic-filter-label">📂 Chủ đề:</span>
+    <button class="topic-btn topic-btn-all active" id="topicBtnAll" onclick="selectAllTopics()">Tất cả</button>
+</div>
+
+<div class="progress-summary">
+    <span class="progress-text">Tiến độ tổng thể:</span>
+    <div class="progress-bar-wrapper">
+        <div class="progress-bar-fill" id="totalProgressBar" style="width:0%"></div>
+    </div>
+    <span class="progress-text" id="totalProgressText">0 / 0</span>
+</div>
+
+<div class="main-content" id="mainContent">
+    <div class="loading">
+        <div class="spinner"></div>
+        Đang tải dữ liệu...
+    </div>
+</div>
+
+<script>
+// Icon map — khớp với key trong toeic_classified.json
+const CATEGORY_ICONS = {
+    "General Business (L1-5)"        : "💼",
+    "Office Issues (L6-10)"          : "🖥️",
+    "Personnel (L11-15)"             : "👥",
+    "Purchasing (L16-20)"            : "📦",
+    "Financing & Budgeting (L21-25)" : "💰",
+    "Management Issues (L26-30)"     : "🏗️",
+    "Restaurants & Events (L31-35)"  : "🍽️",
+    "Travel (L36-40)"                : "✈️",
+    "Entertainment (L41-45)"         : "🎭",
+    "Health (L46-50)"                : "🏥",
+    "Miscellaneous (Cần kiểm tra lại)": "📌"
+};
+
+const VOCAB_ORDER = { A2: 1, B1: 2, B2: 3, C1: 4 };
+
+let DATA = {};
+let completedSet    = new Set(JSON.parse(localStorage.getItem('toeic_completed') || '[]'));
+let activeTypeFilter  = 'all';
+let activeVocabFilter = 'all';
+let activeDoneFilter  = 'all';
+let selectedTopics    = new Set(); // empty = show all
+
+function getTypeFromLink(link) {
+    if (link.includes('/conversation-')) return 'conversation';
+    if (link.includes('/short-talk-'))   return 'short-talk';
+    return 'other';
+}
+
+function titleFromLink(link) {
+    const match = link.match(/\/toeic\/([\w-]+)\.\d+\/listen/);
+    if (!match) return link;
+    return match[1].replace(/-/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function saveCompleted() {
+    localStorage.setItem('toeic_completed', JSON.stringify([...completedSet]));
+}
+
+function toggleComplete(key, btn, card, practiceBtn) {
+    if (completedSet.has(key)) {
+        completedSet.delete(key);
+        btn.classList.remove('checked');
+        btn.textContent = '⭕';
+        card.classList.remove('completed');
+        practiceBtn.innerHTML = '▶ Luyện nghe';
+    } else {
+        completedSet.add(key);
+        btn.classList.add('checked');
+        btn.textContent = '✅';
+        card.classList.add('completed');
+        practiceBtn.innerHTML = '🔁 Ôn lại';
+    }
+    saveCompleted();
+    updateStats();
+}
+
+function toggleTypeFilter(btn, type) {
+    document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTypeFilter = type;
+    applyFilters();
+}
+
+function toggleVocabFilter(btn, vocab) {
+    document.querySelectorAll('[data-vocab]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeVocabFilter = vocab;
+    applyFilters();
+}
+
+function toggleDoneFilter(btn, done) {
+    document.querySelectorAll('[data-done]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeDoneFilter = done;
+    applyFilters();
+}
+
+function toggleTopicFilter(btn, catName) {
+    if (selectedTopics.has(catName)) {
+        selectedTopics.delete(catName);
+        btn.classList.remove('active');
+    } else {
+        selectedTopics.add(catName);
+        btn.classList.add('active');
+    }
+    // If nothing selected, treat as "all"
+    document.getElementById('topicBtnAll').classList.toggle('active', selectedTopics.size === 0);
+    applyFilters();
+}
+
+function selectAllTopics() {
+    selectedTopics.clear();
+    document.querySelectorAll('.topic-btn:not(.topic-btn-all)').forEach(b => b.classList.remove('active'));
+    document.getElementById('topicBtnAll').classList.add('active');
+    applyFilters();
+}
+
+function resetAll() {
+    document.getElementById('searchInput').value = '';
+    activeTypeFilter  = 'all';
+    activeVocabFilter = 'all';
+    activeDoneFilter  = 'all';
+    selectedTopics.clear();
+    document.querySelectorAll('[data-type]').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('[data-vocab]').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('[data-done]').forEach(b  => b.classList.remove('active'));
+    document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-type="all"]').classList.add('active');
+    document.querySelector('[data-vocab="all"]').classList.add('active');
+    document.querySelector('[data-done="all"]').classList.add('active');
+    document.getElementById('topicBtnAll').classList.add('active');
+    document.getElementById('sortSelect').value = 'default';
+    applyFilters();
+}
+
+function applyFilters() {
+    const query = document.getElementById('searchInput').value.toLowerCase().trim();
+    const sort  = document.getElementById('sortSelect').value;
+    let visible = 0;
+
+    for (const catName of Object.keys(DATA)) {
+        const safeId  = safeID(catName);
+        const section = document.getElementById('section-' + safeId);
+        const grid    = document.getElementById('grid-'    + safeId);
+        if (!section || !grid) continue;
+
+        const cards = Array.from(grid.querySelectorAll('.card'));
+
+        // Skip entire section if topic filter active and this category not selected
+        const matchTopic = selectedTopics.size === 0 || selectedTopics.has(catName);
+        if (!matchTopic) {
+            const cards2 = Array.from(grid.querySelectorAll('.card'));
+            cards2.forEach(c => c.classList.add('hidden'));
+            section.style.display = 'none';
+            continue;
+        }
+
+        let filtered = cards.filter(card => {
+            const matchSearch = !query || card.dataset.title.includes(query);
+            const matchType   = activeTypeFilter  === 'all' || card.dataset.type  === activeTypeFilter;
+            const matchVocab  = activeVocabFilter === 'all' || card.dataset.vocab === activeVocabFilter;
+            const isDone      = completedSet.has(card.dataset.key) ? 'done' : 'undone';
+            const matchDone   = activeDoneFilter  === 'all' || isDone === activeDoneFilter;
+            return matchSearch && matchType && matchVocab && matchDone;
+        });
+
+        if (sort === 'title-asc')  filtered.sort((a,b) => a.dataset.title.localeCompare(b.dataset.title));
+        if (sort === 'title-desc') filtered.sort((a,b) => b.dataset.title.localeCompare(a.dataset.title));
+        if (sort === 'vocab-asc')  filtered.sort((a,b) => (VOCAB_ORDER[a.dataset.vocab]||9) - (VOCAB_ORDER[b.dataset.vocab]||9));
+        if (sort === 'vocab-desc') filtered.sort((a,b) => (VOCAB_ORDER[b.dataset.vocab]||9) - (VOCAB_ORDER[a.dataset.vocab]||9));
+        if (sort === 'completed')  filtered.sort((a,b) => (completedSet.has(a.dataset.key)?1:0) - (completedSet.has(b.dataset.key)?1:0));
+
+        cards.forEach(c => c.classList.add('hidden'));
+        filtered.forEach(c => { c.classList.remove('hidden'); grid.appendChild(c); });
+
+        visible += filtered.length;
+        const countEl = section.querySelector('.category-count');
+        if (countEl) countEl.textContent = filtered.length;
+        section.style.display = filtered.length === 0 ? 'none' : '';
+    }
+
+    document.getElementById('visibleItems').textContent = visible;
+    const nr = document.getElementById('noResults');
+    if (nr) nr.style.display = visible === 0 ? 'block' : 'none';
+}
+
+function updateStats() {
+    let total = 0;
+    for (const cat of Object.values(DATA)) total += cat.items.length;
+    const done = completedSet.size;
+
+    document.getElementById('totalItems').textContent     = total;
+    document.getElementById('completedItems').textContent = done;
+    // Re-sync visibleItems after toggling completion
+    applyFilters();
+
+    const pct = total ? Math.round(done / total * 100) : 0;
+    document.getElementById('totalProgressBar').style.width  = pct + '%';
+    document.getElementById('totalProgressText').textContent = `${done} / ${total} (${pct}%)`;
+
+    for (const [catName, catData] of Object.entries(DATA)) {
+        const sid  = safeID(catName);
+        const fill = document.getElementById('catFill-' + sid);
+        const text = document.getElementById('catText-' + sid);
+        if (!fill || !text) continue;
+        const cTotal = catData.items.length;
+        const cDone  = catData.items.filter(i => completedSet.has(i.link)).length;
+        fill.style.width  = cTotal ? Math.round(cDone / cTotal * 100) + '%' : '0%';
+        text.textContent  = `${cDone}/${cTotal}`;
+    }
+}
+
+function toggleSection(catName) {
+    const safeId   = safeID(catName);
+    const grid     = document.getElementById('grid-' + safeId);
+    const icon     = document.getElementById('collapseIcon-' + safeId);
+    const isHidden = grid.style.display === 'none';
+    grid.style.display = isHidden ? 'grid' : 'none';
+    icon.classList.toggle('collapsed', !isHidden);
+}
+
+function safeID(name) {
+    return name.replace(/[\s()]/g, '-').replace(/[&/]/g, '').replace(/-+/g, '-');
+}
+
+function buildCard(item) {
+    const type        = getTypeFromLink(item.link);
+    const isCompleted = completedSet.has(item.link);
+    const vocab       = item.vocab || 'unknown';
+    const title       = item.title || titleFromLink(item.link);
+
+    const card = document.createElement('div');
+    card.className     = 'card' + (isCompleted ? ' completed' : '');
+    card.dataset.title = title.toLowerCase();
+    card.dataset.type  = type;
+    card.dataset.vocab = vocab;
+    card.dataset.key   = item.link;
+
+    card.innerHTML = `
+        <div class="card-top">
+            <span class="card-title">${title}</span>
+            <span class="vocab-badge badge-${vocab}">${vocab}</span>
+        </div>
+        <div class="card-meta">
+            <span class="card-type-badge ${type === 'conversation' ? 'type-conversation' : 'type-short-talk'}">
+                ${type === 'conversation' ? '💬 Conversation' : '🎙️ Short Talk'}
+            </span>
+        </div>
+        <div class="card-actions">
+            <a class="btn-practice" href="${item.link}" target="_blank">
+                ${isCompleted ? '🔁 Ôn lại' : '▶ Luyện nghe'}
+            </a>
+            <button class="btn-check ${isCompleted ? 'checked' : ''}" title="Đánh dấu hoàn thành">
+                ${isCompleted ? '✅' : '⭕'}
+            </button>
+        </div>
+    `;
+
+    const checkBtn    = card.querySelector('.btn-check');
+    const practiceBtn = card.querySelector('.btn-practice');
+    checkBtn.addEventListener('click', () => toggleComplete(item.link, checkBtn, card, practiceBtn));
+    return card;
+}
+
+function buildUI() {
+    const main = document.getElementById('mainContent');
+    main.innerHTML = '';
+    let totalItems = 0;
+
+    for (const [catName, catData] of Object.entries(DATA)) {
+        if (!catData.items || catData.items.length === 0) continue;
+
+        const safeId = safeID(catName);
+        totalItems  += catData.items.length;
+
+        const section = document.createElement('div');
+        section.className = 'category-section';
+        section.id        = 'section-' + safeId;
+
+        section.innerHTML = `
+            <div class="category-header" onclick="toggleSection(${JSON.stringify(catName)})">
+                <div class="category-title">
+                    <span class="category-icon">${catData.icon}</span>
+                    <span class="category-name">${catName}</span>
+                    <span class="category-count" id="count-${safeId}">${catData.items.length}</span>
+                </div>
+                <div class="category-progress">
+                    <div class="cat-progress-bar">
+                        <div class="cat-progress-fill" id="catFill-${safeId}" style="width:0%"></div>
+                    </div>
+                    <span class="cat-progress-text" id="catText-${safeId}">0/${catData.items.length}</span>
+                    <span class="collapse-icon" id="collapseIcon-${safeId}">▼</span>
+                </div>
+            </div>
+            <hr class="divider">
+        `;
+
+        const grid = document.createElement('div');
+        grid.className       = 'cards-grid';
+        grid.id              = 'grid-' + safeId;
+        grid.style.marginTop = '14px';
+
+        catData.items.forEach(item => grid.appendChild(buildCard(item)));
+
+        section.appendChild(grid);
+        main.appendChild(section);
+    }
+
+    const noResults = document.createElement('div');
+    noResults.id            = 'noResults';
+    noResults.className     = 'no-results';
+    noResults.style.display = 'none';
+    noResults.innerHTML     = '<span class="icon">🔍</span>Không tìm thấy bài học phù hợp.';
+    main.appendChild(noResults);
+
+    // Only count non-empty categories
+    const nonEmptyCats = Object.values(DATA).filter(c => c.items && c.items.length > 0).length;
+    document.getElementById('totalCategories').textContent = nonEmptyCats;
+    document.getElementById('totalItems').textContent      = totalItems;
+    document.getElementById('visibleItems').textContent    = totalItems;
+
+    // Build topic filter buttons dynamically
+    const container = document.getElementById('topicFilter');
+    // Remove old topic buttons (keep label + "Tất cả" btn)
+    container.querySelectorAll('.topic-btn:not(.topic-btn-all)').forEach(b => b.remove());
+    for (const [catName, catData] of Object.entries(DATA)) {
+        if (!catData.items || catData.items.length === 0) continue;
+        const btn = document.createElement('button');
+        btn.className   = 'topic-btn';
+        btn.textContent = catData.icon + ' ' + catName;
+        btn.title       = catData.items.length + ' bài';
+        btn.addEventListener('click', () => toggleTopicFilter(btn, catName));
+        container.appendChild(btn);
+    }
+
+    updateStats();
+}
+
+// ── Fetch từ toeic_classified.json ───────────────────────────────────────────
+fetch('toeic_classified.json')
+    .then(res => {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+    })
+    .then(json => {
+        for (const [catName, items] of Object.entries(json)) {
+            DATA[catName] = {
+                icon : CATEGORY_ICONS[catName] || '📌',
+                items: items
+            };
+        }
+        buildUI();
+    })
+    .catch(err => {
+        document.getElementById('mainContent').innerHTML =
+            `<div style="color:red;padding:40px;text-align:center">
+                ❌ Không thể tải <code>toeic_classified.json</code><br>
+                <small>${err}</small><br><br>
+                <small>Mở file qua web server: <code>python -m http.server 8080</code></small>
+             </div>`;
+    });
+</script>
+</body>
+</html>
